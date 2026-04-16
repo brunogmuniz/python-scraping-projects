@@ -82,7 +82,7 @@ python nome_do_arquivo.py
   "inicio": "03/08/2026",
   "fim": "31/07/2030",
   "situacao": "Em andamento",
-  "coordenador": "CAROLINA LISBOA MEZZOMO",
+  "coordenador": "AUTOR DO PROJETO",
   "resumo_len": 2242
 }
 ```
