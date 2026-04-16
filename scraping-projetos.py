@@ -12,7 +12,6 @@ driver.get(BASE_URL)
 wait = WebDriverWait(driver, 10)
 
 
-# 👉 clicar no botão pesquisar (CORRETO)
 def clicar_pesquisar():
     try:
         botao = wait.until(EC.element_to_be_clickable((By.ID, "search-btn")))
@@ -24,7 +23,7 @@ def clicar_pesquisar():
         print("❌ Erro ao clicar pesquisar:", e)
 
 
-# 👉 ir pra página N
+
 def ir_para_pagina(numero):
     for _ in range(numero - 1):
         try:
@@ -44,7 +43,6 @@ def ir_para_pagina(numero):
 
 pagina = 1
 
-# 🔥 primeira busca
 clicar_pesquisar()
 
 while True:
@@ -55,16 +53,13 @@ while True:
     except:
         print("⚠️ Tabela não carregou")
         break
-
     linhas = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
-
     if not linhas:
-        print("⚠️ Nenhuma linha encontrada")
         break
 
     projetos = []
 
-    # 👉 coleta dados + links
+  
     for linha in linhas:
         colunas = linha.find_elements(By.TAG_NAME, "td")
 
@@ -85,12 +80,10 @@ while True:
             })
         except:
             continue
-
-    # 👉 entra nos detalhes
+     #detalhes
     for proj in projetos:
         try:
             driver.get(proj["url"])
-
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
             # resumo
@@ -107,10 +100,8 @@ while True:
                 participantes = driver.find_elements(
                     By.CSS_SELECTOR, "#paginationWrapperParticipantes tbody tr"
                 )
-
                 for p in participantes:
                     tds = p.find_elements(By.TAG_NAME, "td")
-
                     if len(tds) >= 4 and "Coordenador" in tds[3].text:
                         coordenador = tds[2].text
                         break
@@ -134,17 +125,15 @@ while True:
             ir_para_pagina(pagina)
 
         except Exception as e:
-            print("❌ Erro no projeto:", e)
+            print("erro:", e)
             driver.get(BASE_URL)
             clicar_pesquisar()
             ir_para_pagina(pagina)
 
-    # 👉 próxima página
     try:
         next_li = wait.until(EC.presence_of_element_located((By.ID, "next_1")))
 
         if "disabled" in next_li.get_attribute("class"):
-            print("🏁 Última página")
             break
 
         next_button = next_li.find_element(By.TAG_NAME, "a")
@@ -154,7 +143,7 @@ while True:
         time.sleep(3)
 
     except Exception as e:
-        print("❌ Erro ao trocar página:", e)
+        print("Sem proxima pagina", e)
         break
 
 driver.quit()
