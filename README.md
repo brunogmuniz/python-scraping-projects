@@ -1,81 +1,73 @@
-# 🕷️ Scraper de Projetos UFSM
+# Scraper de Projetos UFSM
 
-Script em Python utilizando **Selenium** para coletar dados públicos de projetos da UFSM diretamente do portal institucional.
-
----
-
-## 📌 O que esse scraper faz
-
-O bot navega automaticamente pelo site e coleta:
-
-* Número do projeto
-* Título
-* Data de início
-* Data de fim
-* Situação
-* Coordenador
-* Resumo (armazenado, não exibido completo)
-
-Ele percorre **todas as páginas**, acessa o detalhe de cada projeto e extrai as informações relevantes.
+Script em Python usando Selenium para coletar dados públicos dos projetos diretamente do portal da UFSM.
 
 ---
 
-## ⚙️ Tecnologias utilizadas
+## O que ele faz
 
-* Python 3
-* Selenium
-* Google Chrome + ChromeDriver automático
+O bot navega pelo site e coleta:
+
+- Número do projeto  
+- Título  
+- Data de início  
+- Data de fim  
+- Situação  
+- Coordenador  
+- Resumo (armazenado, não exibido completo)
+
+Ele percorre todas as páginas, entra no detalhe de cada projeto e extrai as informações.
 
 ---
 
-## 🚀 Como rodar
+## Tecnologias
+
+- Python 3  
+- Selenium  
+- Google Chrome + ChromeDriver  
+
+---
+
+## Como rodar
 
 ### 1. Instalar dependências
-
-```bash
 pip install selenium
-```
 
----
-
-### 2. Executar o script
-
-```bash
+### 2. Executar
 python nome_do_arquivo.py
-```
 
 ---
 
-## 🧠 Como o bot funciona
+## Como funciona
 
-1. Acessa a página de projetos
-2. Clica no botão **Pesquisar**
-3. Percorre a tabela de resultados
-4. Para cada linha:
+Fluxo do script:
 
-   * Abre o detalhe do projeto
-   * Extrai os dados
-   * Volta para a lista
-   * Clica novamente em **Pesquisar**
-   * Volta para a página correta
-5. Avança para a próxima página
-6. Repete até o fim
-
----
-
-## ⚠️ Problemas tratados
-
-* ✔️ Paginação dinâmica (botão "Próxima página")
-* ✔️ Recarregamento da tabela após voltar
-* ✔️ Evita erro de índice (`IndexError`)
-* ✔️ Evita erro de elemento não encontrado
-* ✔️ Sincronização com `sleep` para evitar carregamento incompleto
+1. Acessa a página de projetos  
+2. Clica em "Pesquisar"  
+3. Percorre a tabela de resultados  
+4. Para cada projeto:
+   - Abre o detalhe  
+   - Extrai os dados  
+   - Volta para a lista  
+   - Clica em "Pesquisar" novamente  
+   - Retorna para a página correta  
+5. Avança para a próxima página  
+6. Repete até o final  
 
 ---
 
-## 📊 Exemplo de saída
+## Problemas tratados
 
-```json
+- Paginação (botão "Próxima página")  
+- Recarregamento da tabela ao voltar  
+- Evita erro de índice (IndexError)  
+- Evita erro de elemento não encontrado  
+- Uso de sleep para evitar problemas de carregamento  
+
+---
+
+## Exemplo de saída
+
 {
   "numero": "065298",
   "titulo": "Efeitos das Práticas Integrativas...",
@@ -85,30 +77,27 @@ python nome_do_arquivo.py
   "coordenador": "AUTOR DO PROJETO",
   "resumo_len": 2242
 }
-```
 
 ---
 
-## 💾 Próximos passos (melhorias)
+## Possíveis melhorias
 
-* Salvar dados em banco (PostgreSQL / MySQL)
-* Exportar para CSV ou JSON
-* Rodar em loop automático (cron job)
-* Usar `WebDriverWait` ao invés de `sleep`
-* Paralelizar coleta (mais avançado)
-
----
-
-## ⚡ Observações
-
-* O site usa carregamento dinâmico → por isso Selenium é necessário
-* Sempre que o bot volta da página de detalhe, é obrigatório clicar novamente em **Pesquisar**
-* O script simula um usuário real navegando
+- Salvar dados em banco (PostgreSQL / MySQL)  
+- Exportar para CSV ou JSON  
+- Rodar automaticamente (cron job)  
+- Substituir sleep por WebDriverWait  
+- Paralelizar a coleta  
 
 ---
 
-## 🧑‍💻 Autor
+## Observações
 
-Bruno 🚀
+- O site utiliza carregamento dinâmico, por isso o uso de Selenium  
+- Sempre que o bot volta da página de detalhe, é necessário clicar novamente em "Pesquisar"  
+- O script simula a navegação de um usuário  
 
 ---
+
+## Autor
+
+Bruno Munizz
