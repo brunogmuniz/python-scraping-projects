@@ -20,7 +20,7 @@ def clicar_pesquisar():
         # espera tabela carregar
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr")))
     except Exception as e:
-        print("❌ Erro ao clicar pesquisar:", e)
+        print(e)
 
 
 
@@ -51,7 +51,7 @@ while True:
     try:
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr")))
     except:
-        print("⚠️ Tabela não carregou")
+        print("tabela não carregou")
         break
     linhas = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
     if not linhas:
@@ -143,7 +143,7 @@ while True:
         time.sleep(3)
 
     except Exception as e:
-        print("Sem proxima pagina", e)
+        print("sem proxima pagina", e)
         break
 
 driver.quit()
