@@ -99,5 +99,6 @@ Fluxo do script:
 ---
 
 ## Autor
+<img width="900" height="774" alt="projetos" src="https://github.com/user-attachments/assets/6e641827-9007-4316-a0a1-ffc10f4fa5a4" />
 
 Bruno Munizz
