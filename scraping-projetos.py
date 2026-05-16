@@ -1,89 +1,78 @@
 import time
-import psycopg
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-DB_DSN = "postgresql://postgres:postgres@localhost:5433/ufsm"
 
-def get_conn():
-    return psycopg.connect(DB_DSN)
+API_BASE = "http://localhost:8081"
+BOT_API_KEY = "lY54m5h3kA2W4nLo8eoeOWr6IvNhnGkBO6mdcSakGVI"  # mesmo valor que vai no filtro do Spring
+
+HEADERS = {
+    "Content-Type": "application/json",
+    "X-Bot-Key": BOT_API_KEY,
+}
 
 
-def salvar_projeto(conn, proj: dict) -> int | None:
-    with conn.cursor() as cur:
-        cur.execute("SELECT id FROM projetos WHERE numero = %s", (proj["numero"],))
-        row = cur.fetchone()
-        if row:
-            print(f"  [SKIP] Projeto {proj['numero']} já existe (id={row[0]})")
-            return row[0]
+def salvar_projeto(proj: dict) -> int | None:
+    payload = {
+        "numero":           proj["numero"],
+        "titulo":           proj["titulo"],
+        "dataInicio":       _parse_date_iso(proj["inicio"]),
+        "dataFim":          _parse_date_iso(proj["fim"]),
+        "situacao":         proj["situacao"],
+        "resumo":           proj["resumo"],
+        "responsavel":      proj["coordenador"],
+        "classificacaoCNPQ": proj["classificacao_cnpq"],
+        "linhaPesquisa":    proj["linha_pesquisa"],
+        "tipoOrientacao":   proj["tipo_orientacao"],
+    }
 
-        cur.execute(
-            """
-            INSERT INTO projetos
-                (numero, titulo, data_inicio, data_fim, situacao, resumo,
-                 url, responsavel, classificacao_cnpq, linha_pesquisa, tipo_orientacao)
-            VALUES
-                (%(numero)s, %(titulo)s, %(data_inicio)s, %(data_fim)s, %(situacao)s,
-                 %(resumo)s, %(url)s, %(responsavel)s, %(classificacao_cnpq)s,
-                 %(linha_pesquisa)s, %(tipo_orientacao)s)
-            RETURNING id
-            """,
-            {
-                "numero":             proj["numero"],
-                "titulo":             proj["titulo"],
-                "data_inicio":        _parse_date(proj["inicio"]),
-                "data_fim":           _parse_date(proj["fim"]),
-                "situacao":           proj["situacao"],
-                "resumo":             proj["resumo"],
-                "url":                proj.get("url", ""),
-                "responsavel":        proj["coordenador"],
-                "classificacao_cnpq": proj["classificacao_cnpq"],
-                "linha_pesquisa":     proj["linha_pesquisa"],
-                "tipo_orientacao":    proj["tipo_orientacao"],
-            },
-        )
-        projeto_id = cur.fetchone()[0]
-        conn.commit()
-        print(f"  [OK] Projeto {proj['numero']} inserido (id={projeto_id})")
+    resp = requests.post(f"{API_BASE}/projetos", json=payload, headers=HEADERS)
+
+    if resp.status_code == 200:
+        projeto_id = resp.json()["id"]
+        print(f"  [OK] Projeto {proj['numero']} salvo (id={projeto_id})")
         return projeto_id
+    elif resp.status_code == 409:
+        print(f"  [SKIP] Projeto {proj['numero']} já existe")
+        return None
+    else:
+        print(f"  [ERRO] Projeto {proj['numero']}: {resp.status_code} - {resp.text}")
+        return None
 
 
-def upsert_topico(conn, nome: str) -> int | None:
+def upsert_topico(nome: str) -> int | None:
     if not nome:
         return None
 
-    with conn.cursor() as cur:
-        cur.execute("SELECT id FROM topicos WHERE nome = %s", (nome,))
-        row = cur.fetchone()
-        if row:
-            return row[0]
+    resp = requests.post(f"{API_BASE}/topicos", json={"nome": nome}, headers=HEADERS)
 
-        cur.execute("INSERT INTO topicos (nome) VALUES (%s) RETURNING id", (nome,))
-        topico_id = cur.fetchone()[0]
-        conn.commit()
-        return topico_id
+    if resp.status_code == 200:
+        return resp.json()["id"]
+    else:
+        print(f"  [ERRO] Tópico '{nome}': {resp.status_code} - {resp.text}")
+        return None
 
 
-def vincular_projeto_topico(conn, projeto_id: int, topico_id: int) -> None:
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT 1 FROM projeto_topicos WHERE projeto_id = %s AND topico_id = %s",
-            (projeto_id, topico_id),
-        )
-        if cur.fetchone():
-            return
+def vincular_projeto_topico(projeto_id: int, topico_id: int) -> None:
+    resp = requests.post(
+        f"{API_BASE}/projeto-topicos",
+        json={"projetoId": projeto_id, "topicoId": topico_id},
+        headers=HEADERS,
+    )
 
-        cur.execute(
-            "INSERT INTO projeto_topicos (projeto_id, topico_id) VALUES (%s, %s)",
-            (projeto_id, topico_id),
-        )
-        conn.commit()
+    if resp.status_code == 200:
+        pass  # vinculado com sucesso
+    elif resp.status_code == 409:
+        pass  # já existia, tudo bem
+    else:
+        print(f"  [ERRO] Vínculo {projeto_id}x{topico_id}: {resp.status_code} - {resp.text}")
 
 
-def salvar_palavras_chave(conn, projeto_id: int, proj: dict) -> None:
+def salvar_palavras_chave(projeto_id: int, proj: dict) -> None:
     palavras = [
         proj.get("palavra_1"),
         proj.get("palavra_2"),
@@ -93,17 +82,19 @@ def salvar_palavras_chave(conn, projeto_id: int, proj: dict) -> None:
     for palavra in palavras:
         if not palavra:
             continue
-        topico_id = upsert_topico(conn, palavra)
+        topico_id = upsert_topico(palavra)
         if topico_id:
-            vincular_projeto_topico(conn, projeto_id, topico_id)
+            vincular_projeto_topico(projeto_id, topico_id)
 
 
-def _parse_date(valor: str):
+def _parse_date_iso(valor: str) -> str | None:
+    """Converte dd/mm/yyyy para yyyy-mm-dd (formato que o Spring espera)."""
     try:
         from datetime import datetime
-        return datetime.strptime(valor, "%d/%m/%Y").date()
+        return datetime.strptime(valor, "%d/%m/%Y").date().isoformat()
     except Exception:
         return None
+
 
 driver = webdriver.Chrome()
 BASE_URL = "https://portal.ufsm.br/projetos/publico/projetos/list.html"
@@ -171,11 +162,7 @@ def buscar_classificacoes():
     }
 
 
-# ---------------------------------------------------------------------------
-# LOOP PRINCIPAL
-# ---------------------------------------------------------------------------
 
-conn = get_conn()
 pagina = 1
 clicar_pesquisar()
 
@@ -240,13 +227,12 @@ try:
 
                 print(f"\nProcessando: {proj['numero']} - {proj['titulo'][:60]}")
 
-                projeto_id = salvar_projeto(conn, proj)
+                projeto_id = salvar_projeto(proj)
                 if projeto_id:
-                    salvar_palavras_chave(conn, projeto_id, proj)
+                    salvar_palavras_chave(projeto_id, proj)
 
             except Exception as e:
                 print("Erro projeto:", e)
-                conn.rollback()
             finally:
                 driver.get(BASE_URL)
                 clicar_pesquisar()
@@ -265,5 +251,4 @@ try:
             break
 
 finally:
-    conn.close()
     driver.quit()
