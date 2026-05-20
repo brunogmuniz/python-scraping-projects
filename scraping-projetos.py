@@ -257,12 +257,17 @@ try:
 
         projetos_completos = []
         for proj in projetos_basicos:
+            situacao = proj["situacao"].strip()
+            if situacao in ("Cancelado", "Concluido/Publicado", "Concluído/Publicado", "Cancelado Res.016/2010", "Suspenso"):
+                print(f"  [IGNORADO] {proj['numero']} ({situacao})")
+                continue
             try:
                 proj = extrair_detalhes(proj)
                 print(f"  Extraido: {proj['numero']} - {proj['titulo'][:50]}")
                 projetos_completos.append(proj)
             except Exception as e:
                 print(f"  Erro ao extrair {proj.get('numero', '?')}: {e}")
+
 
         print(f"  Salvando {len(projetos_completos)} projetos na API...")
         with ThreadPoolExecutor(max_workers=4) as pool:
@@ -273,7 +278,7 @@ try:
                 except Exception as e:
                     print(f"  Erro ao salvar {futures[fut]}: {e}")
 
-    
+
         save_checkpoint(pagina)
 
         try:
